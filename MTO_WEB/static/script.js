@@ -47,8 +47,16 @@ const drawJoystick = (x, y) => {
     outX = canvas.width / 2 + distance * Math.cos(angle);
     outY = canvas.height / 2 + distance * Math.sin(angle);
     //TODO: map these values to alpha/beta/gamma
+	if(enableGyroButton.checked == false){
+		alpha = distance * Math.cos(angle)/size;
+		beta = distance*Math.sin(angle)/size;
 
-
+		//print values
+		alphaElement.textContent = alpha.toFixed(2); 				  // Display with 2 decimal places
+		betaElement.textContent = beta.toFixed(2); 				  // Display with 2 decimal places
+		gammaElement.textContent = 0.00; 				  // Display with 2 decimal places
+	}
+	
     // Draw joystick handle
     ctx.beginPath();
     ctx.arc(
@@ -144,12 +152,13 @@ const startSensor = (sensor) => {
 			// The quaternion values represent the device's orientation
 			const quaternion = sensor.quaternion;
 
-			// Convert quaternion to Euler angles (degrees)
-			const euler = getEulerAngles(quaternion);
-			const alpha = euler.alpha; // Yaw (rotation around Z axis)
-			const beta = euler.beta;  // Pitch (rotation around X axis)
-			const gamma = euler.gamma; // Roll (rotation around Y axis)
-
+			if(enableGyroButton.checked == true){
+				// Convert quaternion to Euler angles (degrees)
+				const euler = getEulerAngles(quaternion);
+				const alpha = euler.alpha; // Yaw (rotation around Z axis)
+				const beta = euler.beta;  // Pitch (rotation around X axis)
+				const gamma = euler.gamma; // Roll (rotation around Y axis)
+			}
 			const orientationData = {
 				alpha: alpha,
 				beta: beta,
