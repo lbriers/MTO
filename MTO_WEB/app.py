@@ -64,14 +64,15 @@ class tkinter_gui:
             beta = gyrodata["beta"]
             gamma = gyrodata["gamma"]
 
-        gamma = gamma - (sign(gamma)*180)
-        gamma /= 45
+        #gamma /= 180 / (2 * math.pi)
         beta /= 45
+        alpha /= 45
         # draw the vector
         ## draw the gamma
         self.canvas.delete("all")
-        self.draw_dir(math.radians(alpha), gamma, "green")
-        self.draw_dir(math.radians(alpha)+(math.pi/2), beta, "red")
+        self.draw_dir(math.radians(gamma), alpha, "green")
+        self.draw_dir(math.radians(gamma)+(math.pi/2), beta, "red")
+        self.draw_dir(math.radians(gamma)+(math.pi/2), 1, "yellow")
 
         self.root.after(5, self.update_dir)
 
@@ -85,7 +86,10 @@ class tkinter_gui:
         self.canvas.create_line(x1, y1, x2, y2, fill=color)
 
 def sign(num):
-    return -1 if num < 0 else 1
+    if(num < 0):
+        return -1
+    else:
+        return 1
 
 def run_tkinter():
     # Create Tkinter window
@@ -100,5 +104,3 @@ if __name__ == '__main__':
     tkinter_thread.start()
 
     app.run(debug=True, host='0.0.0.0', port=5000, ssl_context='adhoc')
-
-
