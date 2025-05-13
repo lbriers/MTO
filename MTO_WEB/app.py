@@ -1,6 +1,7 @@
 from xml.etree.ElementTree import tostring
 
 from flask import Flask, request, jsonify
+import requests 
 from flask import render_template
 import json
 import threading
@@ -9,7 +10,7 @@ import tkinter as tk
 from tkinter import ttk
 
 app = Flask(__name__)
-
+ATLASSTONE_URL = "http://localhost:8000"
 #===============================================================
 # DATA LOCKS
 #===============================================================
@@ -28,76 +29,48 @@ def hello_world():
 
 @app.route('/orientationdata', methods=['POST'])
 def handle_orientationdata():
-    data = request.get_json()
+    try:
+        data = request.get_json()
 
-    if data:
+        if not data:
+            return jsonify({'status': 'error', 'message': 'No data received'}), 400
+
+        if not all(key in data for key in ('alpha', 'beta', 'gamma')):
+            return jsonify({'status': 'error', 'message': 'Missing alpha, beta, or gamma'}), 400
+
         alpha = data.get('alpha')
         beta = data.get('beta')
         gamma = data.get('gamma')
 
-        #print(f"Received orientation data: Alpha={alpha}, Beta={beta}, Gamma={gamma}")
-        with data_lock:
-            gyrodata["alpha"] = alpha
-            gyrodata["beta"] = beta
-            gyrodata["gamma"] = gamma
-        # Process the data (e.g., store in a database)
-        # ...
+        # Validate that values are numbers
+        if not all(isinstance(x, (int, float)) for x in (alpha, beta, gamma)):
+            return jsonify({'status': 'error', 'message': 'Alpha, beta, and gamma must be numeric'}), 400
 
-        return jsonify({'status': 'success', 'message': 'Orientation data received'}), 200
-    else:
-        return jsonify({'status': 'error', 'message': 'No data received'}), 400
+        # Prepare the command for the Atlasstone controller
+        command = {
+            'roll': alpha,
+            'pitch': beta,
+            'yaw': gamma
+        }
 
+        # Send the command to the Atlasstone controller
+        try:
+            response = requests.post(ATLASSTONE_URL, json=command)  #Changed path to root
+            response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
+            return jsonify({'status': 'success', 'message': 'Command sent to Atlasstone'}), 200
+        except requests.exceptions.RequestException as e:
+            print(f"Error sending command to Atlasstone: {e}")
+            return jsonify({'status': 'error', 'message': f'Failed to send command to Atlasstone: {e}'}), 500
+
+    except json.JSONDecodeError:
+        return jsonify({'status': 'error', 'message': 'Invalid JSON data'}), 400
+    except Exception as e:
+        print(f"Error processing orientation data: {e}")  # Log the error
+        return jsonify({'status': 'error', 'message': f'Server error: {e}'}), 500
 
 #===============================================================
 # DRAWING APPLICATION
 #===============================================================
-
-class tkinter_gui:
-    def __init__(self, root):
-        self.root = root
-        root.title("My Tkinter Application")
-
-        # --- Widgets ---
-        # Label
-        self.label = ttk.Label(root, text="Input direction visualisation")
-        self.label.grid(row=0, column=0, padx=10, pady=10, sticky=tk.W)
-
-        # Canvas for drawing
-        self.canvas_width = 400
-        self.canvas_height = 400
-        self.canvas = tk.Canvas(root, width=self.canvas_width, height=self.canvas_height, bg="white")
-        self.canvas.grid(row=2, column=0, columnspan=2, padx=10, pady=10)
-
-        self.update_dir()
-
-    def update_dir(self):
-        # calculate the vector
-        with data_lock:
-            alpha = gyrodata["alpha"]
-            beta = gyrodata["beta"]
-            gamma = gyrodata["gamma"]
-
-        #gamma /= 180 / (2 * math.pi)
-        gamma /= 45 
-        beta /= 45
-        #alpha /= 45
-        # draw the vector
-        ## draw the gamma
-        self.canvas.delete("all")
-        self.draw_dir(math.radians(alpha)+(math.pi/2), 1, "yellow")
-        self.draw_dir(math.radians(alpha), gamma, "green")
-        self.draw_dir(math.radians(alpha)+(math.pi/2), beta, "red")
-
-        self.root.after(5, self.update_dir)
-
-    def draw_dir(self, angle, scale, color):
-        """Draws a rectangle on the canvas."""
-        x1 = 200
-        y1 = 200
-        l = 150*scale
-        x2 = x1 + (l*math.cos(angle))
-        y2 = y1 - (l*math.sin(angle))
-        self.canvas.create_line(x1, y1, x2, y2, fill=color)
 
 def sign(num):
     if(num < 0):
@@ -105,13 +78,6 @@ def sign(num):
     else:
         return 1
 
-def run_tkinter():
-    # Create Tkinter window
-    root = tk.Tk()
-    app = tkinter_gui(root)
-    root.mainloop()
-
- 
 #===============================================================
 # APPLICATION MANAGER
 #===============================================================
@@ -119,9 +85,9 @@ def run_tkinter():
 if __name__ == '__main__':
 
     # Flask server in seperate thread
-    tkinter_thread = threading.Thread(target=run_tkinter)
-    tkinter_thread.daemon = True  # Allow main thread to exit even if this is running
-    tkinter_thread.start()
+    #tkinter_thread = threading.Thread(target=run_tkinter)
+    #tkinter_thread.daemon = True  # Allow main thread to exit even if this is running
+    #tkinter_thread.start()
 
 
 
