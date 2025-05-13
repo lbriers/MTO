@@ -100,20 +100,20 @@ const startSensor = (sensor) => {
 				const alpha = euler.alpha; // Yaw (rotation around Z axis)
 				const beta = euler.beta;  // Pitch (rotation around X axis)
 				const gamma = euler.gamma; // Roll (rotation around Y axis)
+				alphaElement.textContent = alpha.toFixed(2); 				  // Display with 2 decimal places
+				betaElement.textContent = beta.toFixed(2); 				  // Display with 2 decimal places
+				gammaElement.textContent = gamma.toFixed(2); 				  // Display with 2 decimal places
+
+				const orientationData = {
+					alpha: alpha,
+					beta: beta,
+					gamma: gamma,
+				};
+
+				sendDataToServer(orientationData);
+				lastSent = now;
 			}
 
-			alphaElement.textContent = alpha.toFixed(2); 				  // Display with 2 decimal places
-			betaElement.textContent = beta.toFixed(2); 				  // Display with 2 decimal places
-			gammaElement.textContent = gamma.toFixed(2); 				  // Display with 2 decimal places
-
-			const orientationData = {
-				alpha: alpha,
-				beta: beta,
-				gamma: gamma,
-			};
-
-			sendDataToServer(orientationData);
-			lastSent = now;
 		}
 	});
 
@@ -164,7 +164,6 @@ if ("AbsoluteOrientationSensor" in window) {
 // Initialize variables for mouse interaction.
 let xco = 0;
 let yco = 0;
-let mousedown = false;
 
 maxDistance = 80;
 
@@ -179,7 +178,7 @@ canvas.height = size;
 
 //initialize output variables for the joystick output
 let outX, outY;
-let trim_gamma = 0;
+let trim_alpha = 0;
 
 // DRAW JOYSTICK AND CALCULATE ALPHA, BETA
 const drawJoystick = (x, y) => {
@@ -215,17 +214,17 @@ const drawJoystick = (x, y) => {
 
 	//Convert joystick position
 	if(enableGyroButton.checked == false){
-		alpha = (distance * Math.cos(angle)/size)*112.5;
+		gamma = (distance * Math.cos(angle)/size)*112.5;
 		beta = -(distance*Math.sin(angle)/size)*112.5;
 
 		//display values
-		alphaElement.textContent = alpha.toFixed(2); 		// Display with 2 decimal places
+		alphaElement.textContent = trim_alpha; 		// Display with 2 decimal places
 		betaElement.textContent = beta.toFixed(2); 		// Display with 2 decimal places
-		gammaElement.textContent = trim_gamma; 		  	// Display with 2 decimal places
+		gammaElement.textContent = gamma.toFixed(2); 		  	// Display with 2 decimal places
 		const orientationData = {
-			alpha: alpha,
+			alpha: trim_alpha,
 			beta: beta,
-			gamma: trim_gamma,
+			gamma: gamma,
 		};
 		sendDataToServer(orientationData);
 	}
@@ -240,29 +239,81 @@ drawJoystick(canvas.width / 2, canvas.height / 2);// Function to send orientatio
 ***************************************/
 
 // Event listener for mouse down event.
+let mousedown = false; // Use let instead of const so it can be modified
+
 document.addEventListener("mousedown", (event) => {
-    mousedown = true;
+  mousedown = true;
 });
 
 // Event listener for mouse up event.
 document.addEventListener("mouseup", (event) => {
-    mousedown = false;
-    drawJoystick(canvas.width / 2, canvas.height / 2); // Reset joystick position to center.
+  mousedown = false;
+  drawJoystick(canvas.width / 2, canvas.height / 2); // Reset joystick position to center.
 });
 
 // Event listener for mouse move event.
 document.addEventListener("mousemove", (event) => {
-    if (mousedown) {
-        yco = event.clientY;
-        xco = event.clientX;
-        drawJoystick(xco - canvas.offsetLeft, yco - canvas.offsetTop);
-    }
+  if (mousedown) {
+    const yco = event.clientY;
+    const xco = event.clientX;
+    drawJoystick(xco - canvas.offsetLeft, yco - canvas.offsetTop);
+  }
 });
 
+// Touch event listeners
+document.addEventListener("touchstart", (event) => {
+  mousedown = true; // Treat touch start as mouse down
+  const touch = event.touches[0];
+  const x = touch.clientX - canvas.offsetLeft;
+  const y = touch.clientY - canvas.offsetTop;
+  drawJoystick(x, y);
+  event.preventDefault(); // Prevent default touch behavior like scrolling
+});
 
+document.addEventListener("touchend", (event) => {
+  mousedown = false; // Treat touch end as mouse up
+  drawJoystick(canvas.width / 2, canvas.height / 2); // Reset joystick position to center.
+});
+
+document.addEventListener("touchmove", (event) => {
+  if (mousedown) {
+    const touch = event.touches[0];
+    const x = touch.clientX - canvas.offsetLeft;
+    const y = touch.clientY - canvas.offsetTop;
+    drawJoystick(x, y);
+    event.preventDefault(); // Prevent default touch behavior like scrolling
+  }
+});
+
+// Prevent scrolling when touching the canvas
+canvas.addEventListener("touchstart", (event) => {
+  event.preventDefault();
+});
+canvas.addEventListener("touchmove", (event) => {
+  event.preventDefault();
+});
+canvas.addEventListener("touchend", (event) => {
+  event.preventDefault();
+});
+
+// Button event listeners (desktop)
 button_trim_left.addEventListener("mousedown", () => {
-	trim_gamma -= 10;
+  trim_alpha -= 10;
+  console.log("trim_alpha left:", trim_alpha); // Added for debugging
 });
 button_trim_right.addEventListener("mousedown", () => {
-	trim_gamma += 10;
+  trim_alpha += 10;
+  console.log("trim_alpha right:", trim_alpha); // Added for debugging
+});
+
+// Button event listeners (touch)
+button_trim_left.addEventListener("touchstart", (event) => {
+  trim_alpha -= 10;
+  console.log("trim_alpha left (touch):", trim_alpha); // Added for debugging
+  event.preventDefault(); // Prevent scrolling when pressing the button
+});
+button_trim_right.addEventListener("touchstart", (event) => {
+  trim_alpha += 10;
+  console.log("trim_alpha right (touch):", trim_alpha); // Added for debugging
+  event.preventDefault(); // Prevent scrolling when pressing the button
 });

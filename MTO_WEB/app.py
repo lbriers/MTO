@@ -10,9 +10,17 @@ from tkinter import ttk
 
 app = Flask(__name__)
 
+#===============================================================
+# DATA LOCKS
+#===============================================================
+
 # Shared data and lock
 gyrodata = {"alpha": 0, "beta": 0, "gamma": 0}
 data_lock = threading.Lock()
+
+#===============================================================
+# WEBSITE 
+#===============================================================
 
 @app.route("/")
 def hello_world():
@@ -38,6 +46,11 @@ def handle_orientationdata():
         return jsonify({'status': 'success', 'message': 'Orientation data received'}), 200
     else:
         return jsonify({'status': 'error', 'message': 'No data received'}), 400
+
+
+#===============================================================
+# DRAWING APPLICATION
+#===============================================================
 
 class tkinter_gui:
     def __init__(self, root):
@@ -65,14 +78,15 @@ class tkinter_gui:
             gamma = gyrodata["gamma"]
 
         #gamma /= 180 / (2 * math.pi)
+        gamma /= 45 
         beta /= 45
-        alpha /= 45
+        #alpha /= 45
         # draw the vector
         ## draw the gamma
         self.canvas.delete("all")
-        self.draw_dir(math.radians(gamma), alpha, "green")
-        self.draw_dir(math.radians(gamma)+(math.pi/2), beta, "red")
-        self.draw_dir(math.radians(gamma)+(math.pi/2), 1, "yellow")
+        self.draw_dir(math.radians(alpha)+(math.pi/2), 1, "yellow")
+        self.draw_dir(math.radians(alpha), gamma, "green")
+        self.draw_dir(math.radians(alpha)+(math.pi/2), beta, "red")
 
         self.root.after(5, self.update_dir)
 
@@ -97,10 +111,28 @@ def run_tkinter():
     app = tkinter_gui(root)
     root.mainloop()
 
+ 
+#===============================================================
+# APPLICATION MANAGER
+#===============================================================
+
 if __name__ == '__main__':
-    # Start Flask server in a separate thread
+
+    # Flask server in seperate thread
     tkinter_thread = threading.Thread(target=run_tkinter)
     tkinter_thread.daemon = True  # Allow main thread to exit even if this is running
     tkinter_thread.start()
 
+
+
     app.run(debug=True, host='0.0.0.0', port=5000, ssl_context='adhoc')
+
+
+
+#===============================================================
+# APPLICATION THREAD BLUEPRINT
+#===============================================================
+# 1. add data mutex
+# 2. call class in different thread
+# 3. function in class should recall itself
+# (see tkinter example)
