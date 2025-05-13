@@ -1,56 +1,60 @@
 import time
 import board
 import adafruit_lsm9ds1
-import csv
+import matplotlib.pyplot as plt
+from collections import deque
 
-# Initialize I2C connection and sensor
-i2c = board.I2C()  # uses board.SCL and board.SDA
+# Initialize I2C and sensor
+i2c = board.I2C()
 sensor = adafruit_lsm9ds1.LSM9DS1_I2C(i2c)
 
-# Define the CSV file name
-csv_filename = "sensor_data.csv"
+# Set up real-time plot
+plt.ion()  # Interactive mode
+fig, ax = plt.subplots()
+xs = deque(maxlen=100)  # Store last 100 readings
+ys_x = deque(maxlen=100)
+ys_y = deque(maxlen=100)
+ys_z = deque(maxlen=100)
 
-# Open the CSV file in write mode and set up the CSV writer
-with open(csv_filename, mode='w', newline='') as csv_file:
-    csv_writer = csv.writer(csv_file)
-    
-    # Write the header row
-    csv_writer.writerow([ 
-        "Index",
-        "Accel_X (m/s^2)", "Accel_Y (m/s^2)", "Accel_Z (m/s^2)",
-        "Mag_X (gauss)", "Mag_Y (gauss)", "Mag_Z (gauss)",
-        "Gyro_X (rad/s)", "Gyro_Y (rad/s)", "Gyro_Z (rad/s)",
-        "Temperature (C)"
-    ])
-    
-    # Initialize index counter
-    index = 1
-    
-    # Main loop to read sensor data and write to CSV
+line_x, = ax.plot([], [], 'r-', label='Mag X')
+line_y, = ax.plot([], [], 'g-', label='Mag Y')
+line_z, = ax.plot([], [], 'b-', label='Mag Z')
+ax.set_xlabel('Time (samples)')
+ax.set_ylabel('Magnetic Field (Gauss)')
+ax.legend()
+ax.grid(True)
+
+print("Logging magnetometer data. Press Ctrl+C to stop.")
+
+try:
+    index = 0
     while True:
-        # Read sensor data
-        accel_x, accel_y, accel_z = sensor.acceleration
+        # Read magnetometer data
         mag_x, mag_y, mag_z = sensor.magnetic
-        gyro_x, gyro_y, gyro_z = sensor.gyro
-        temp = sensor.temperature
         
-        # Write the data row to the CSV file with the index as the first column
-        csv_writer.writerow([ 
-            index,  # Use index instead of timestamp
-            accel_x, accel_y, accel_z,
-            mag_x, mag_y, mag_z,
-            gyro_x, gyro_y, gyro_z,
-            temp
-        ])
+        # Update plot data
+        xs.append(index)
+        ys_x.append(mag_x)
+        ys_y.append(mag_y)
+        ys_z.append(mag_z)
         
-        # Print the data to the console (optional)
-        print(f"Index: {index} - Accel: ({accel_x:.3f}, {accel_y:.3f}, {accel_z:.3f}) m/s^2 | "
-              f"Mag: ({mag_x:.3f}, {mag_y:.3f}, {mag_z:.3f}) gauss | "
-              f"Gyro: ({gyro_x:.3f}, {gyro_y:.3f}, {gyro_z:.3f}) rad/s | "
-              f"Temp: {temp:.3f} C")
+        # Update plot
+        line_x.set_data(xs, ys_x)
+        line_y.set_data(xs, ys_y)
+        line_z.set_data(xs, ys_z)
+        ax.relim()
+        ax.autoscale_view()
+        fig.canvas.flush_events()
         
-        # Increment the index for the next row
+        # Print to console (optional)
+        print(f"Mag: X={mag_x:.2f} G, Y={mag_y:.2f} G, Z={mag_z:.2f} G")
+        
         index += 1
-        
-        # Delay for a second
-        time.sleep(0.1)
+        time.sleep(0.1)  # Adjust sampling rate
+
+except KeyboardInterrupt:
+    print("Stopped logging.")
+
+# Keep plot open after stopping
+plt.ioff()
+plt.show()

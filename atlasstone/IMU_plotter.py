@@ -1,43 +1,56 @@
-# -*- coding: utf-8 -*-
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Load the CSV file into a pandas DataFrame
-csv_filename = "sensor_data.csv"
-df = pd.read_csv(csv_filename)
+# Load the CSV file
+filename = 'data/imu_data_20250511_135848.csv'  # replace with your actual filename
+df = pd.read_csv(filename)
 
-# Plot Acceleration data (Accel_X, Accel_Y, Accel_Z)
-plt.figure(figsize=(10, 6))
+# Convert timestamp to float
+df['timestamp'] = df['timestamp'].astype(float)
 
-plt.subplot(3, 1, 1)
-plt.plot(df['Index'], df['Accel_X (m/s^2)'], label='Accel_X (m/s^2)', color='r')
-plt.plot(df['Index'], df['Accel_Y (m/s^2)'], label='Accel_Y (m/s^2)', color='g')
-plt.plot(df['Index'], df['Accel_Z (m/s^2)'], label='Accel_Z (m/s^2)', color='b')
-plt.xlabel('Index')
-plt.ylabel('Acceleration (m/s^2)')
-plt.title('Acceleration vs Index')
-plt.legend()
+# Define column groups
+groups = {
+    "Accelerometer (Raw)": ['accel_x_raw', 'accel_y_raw', 'accel_z_raw'],
+    "Accelerometer (Filtered)": ['accel_x_filtered', 'accel_y_filtered', 'accel_z_filtered'],
+    "Gyroscope (Raw)": ['gyro_x_raw', 'gyro_y_raw', 'gyro_z_raw'],
+    "Gyroscope (Filtered)": ['gyro_x_filtered', 'gyro_y_filtered', 'gyro_z_filtered'],
+    "Magnetometer (Raw)": ['mag_x_raw', 'mag_y_raw', 'mag_z_raw'],
+    "Magnetometer (Filtered)": ['mag_x_filtered', 'mag_y_filtered', 'mag_z_filtered'],
+    "Magnetometer (Normalized)": ['mag_x_norm', 'mag_y_norm', 'mag_z_norm'],
+    "Euler Angles (Raw)": ['roll_raw', 'pitch_raw', 'yaw_raw'],
+    "Euler Angles (Filtered)": ['roll_filtered', 'pitch_filtered', 'yaw_filtered'],
+    "Euler Angles (Unfiltered)": ['roll_unfiltered', 'pitch_unfiltered', 'yaw_unfiltered'],
+    "Quaternion (Filtered)": ['quat_w', 'quat_x', 'quat_y', 'quat_z'],
+    "Quaternion (Raw)": ['quat_raw_w', 'quat_raw_x', 'quat_raw_y', 'quat_raw_z'],
+    "Magnetometer Magnitude": ['mag_magnitude']
+}
 
-# Plot Magnetometer data (Mag_X, Mag_Y, Mag_Z)
-plt.subplot(3, 1, 2)
-plt.plot(df['Index'], df['Mag_X (gauss)'], label='Mag_X (gauss)', color='r')
-plt.plot(df['Index'], df['Mag_Y (gauss)'], label='Mag_Y (gauss)', color='g')
-plt.plot(df['Index'], df['Mag_Z (gauss)'], label='Mag_Z (gauss)', color='b')
-plt.xlabel('Index')
-plt.ylabel('Magnetometer (gauss)')
-plt.title('Magnetometer vs Index')
-plt.legend()
+# Plot each group individually
+for title, cols in groups.items():
+    plt.figure(figsize=(10, 4))
+    for col in cols:
+        plt.plot(df['timestamp'], df[col], label=col)
+    plt.title(title)
+    plt.xlabel('Time (s)')
+    plt.ylabel('Value')
+    plt.legend(loc='upper right')
+    plt.tight_layout()
 
-# Plot Gyroscope data (Gyro_X, Gyro_Y, Gyro_Z)
-plt.subplot(3, 1, 3)
-plt.plot(df['Index'], df['Gyro_X (rad/s)'], label='Gyro_X (rad/s)', color='r')
-plt.plot(df['Index'], df['Gyro_Y (rad/s)'], label='Gyro_Y (rad/s)', color='g')
-plt.plot(df['Index'], df['Gyro_Z (rad/s)'], label='Gyro_Z (rad/s)', color='b')
-plt.xlabel('Index')
-plt.ylabel('Gyroscope (rad/s)')
-plt.title('Gyroscope vs Index')
-plt.legend()
+# Overview with subplots (excluding Quaternion, Magnetometer Magnitude, and Euler Angles (Raw))
+excluded = {"Quaternion (Filtered)", "Quaternion (Raw)", "Magnetometer Magnitude", "Euler Angles (Raw)"}
+overview_groups = {k: v for k, v in groups.items() if k not in excluded}
 
-# Display the plots
-plt.tight_layout()
+n_groups = len(overview_groups)
+fig, axes = plt.subplots(n_groups, 1, figsize=(14, 3 * n_groups), sharex=True)
+
+for ax, (title, cols) in zip(axes, overview_groups.items()):
+    for col in cols:
+        ax.plot(df['timestamp'], df[col], label=col, linewidth=0.8)
+    ax.set_title(title)
+    ax.set_ylabel("Value")
+    ax.legend(loc='upper right', fontsize="small")
+
+axes[-1].set_xlabel("Time (s)")
+plt.tight_layout(rect=[0, 0, 1, 0.97])  # Adjust for suptitle
+
 plt.show()
