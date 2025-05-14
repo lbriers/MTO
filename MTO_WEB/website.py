@@ -8,6 +8,7 @@ import threading
 import math
 import tkinter as tk
 from tkinter import ttk
+import PID_loop
 
 app = Flask(__name__)
 ATLASSTONE_URL = "http://localhost:8000"
@@ -16,8 +17,8 @@ ATLASSTONE_URL = "http://localhost:8000"
 #===============================================================
 
 # Shared data and lock
-gyrodata = {"alpha": 0, "beta": 0, "gamma": 0}
-data_lock = threading.Lock()
+#gyrodata = {"alpha": 0, "beta": 0, "gamma": 0}
+#data_lock = threading.Lock()
 
 #===============================================================
 # WEBSITE 
@@ -29,7 +30,6 @@ def hello_world():
 
 @app.route('/orientationdata', methods=['POST'])
 def handle_orientationdata():
-    try:
         data = request.get_json()
 
         if not data:
@@ -38,39 +38,14 @@ def handle_orientationdata():
         if not all(key in data for key in ('alpha', 'beta', 'gamma')):
             return jsonify({'status': 'error', 'message': 'Missing alpha, beta, or gamma'}), 400
 
-        alpha = data.get('alpha')
-        beta = data.get('beta')
-        gamma = data.get('gamma')
+        if atlasController:  # Ensure atlasController is initialized
+            shared_state = atlasController.get_shared_state()
+            with shared_state.lock:
+                shared_state.target_yaw = data.get("alpha")
+                shared_state.target_pitch = data.get("beta")
+                shared_state.target_roll = data.get("gamma")
 
-        # Validate that values are numbers
-        if not all(isinstance(x, (int, float)) for x in (alpha, beta, gamma)):
-            return jsonify({'status': 'error', 'message': 'Alpha, beta, and gamma must be numeric'}), 400
-
-        # Prepare the command for the Atlasstone controller
-        command = {
-            'roll': alpha,
-            'pitch': beta,
-            'yaw': gamma
-        }
-
-        # Send the command to the Atlasstone controller
-        try:
-            response = requests.post(ATLASSTONE_URL, json=command)  #Changed path to root
-            response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
-            return jsonify({'status': 'success', 'message': 'Command sent to Atlasstone'}), 200
-        except requests.exceptions.RequestException as e:
-            print(f"Error sending command to Atlasstone: {e}")
-            return jsonify({'status': 'error', 'message': f'Failed to send command to Atlasstone: {e}'}), 500
-
-    except json.JSONDecodeError:
-        return jsonify({'status': 'error', 'message': 'Invalid JSON data'}), 400
-    except Exception as e:
-        print(f"Error processing orientation data: {e}")  # Log the error
-        return jsonify({'status': 'error', 'message': f'Server error: {e}'}), 500
-
-#===============================================================
-# DRAWING APPLICATION
-#===============================================================
+        return jsonify({"status": "success"}), 200 # Add return statement
 
 def sign(num):
     if(num < 0):
@@ -82,12 +57,24 @@ def sign(num):
 # APPLICATION MANAGER
 #===============================================================
 
+def start_server():
+    app.run(debug=True, host='0.0.0.0', port=5000, ssl_context='adhoc')
+
+
 if __name__ == '__main__':
 
     # Flask server in seperate thread
     #tkinter_thread = threading.Thread(target=run_tkinter)
     #tkinter_thread.daemon = True  # Allow main thread to exit even if this is running
     #tkinter_thread.start()
+
+    atlasController = PID_loop.AtlasstoneController()
+    shared_state = atlasController.get_shared_state()
+    #atlasController.setWebsiteData(gyrodata, data_lock)
+    atlasController_thread = threading.Thread(target=atlasController.run(), daemon=True)
+
+    atlasController_thread.start()
+    
 
 
 

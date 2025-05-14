@@ -3,11 +3,11 @@ import tkinter as tk
 from tkinter import ttk  # For themed widgets (optional, but recommended)
 from tkinter import messagebox  # For message boxes
 
-class DirectionVisualiser:
+
+class tkinter_gui:
     def __init__(self, root):
         self.root = root
         root.title("My Tkinter Application")
-
         # --- Widgets ---
         # Label
         self.label = ttk.Label(root, text="Input direction visualisation")
@@ -18,21 +18,30 @@ class DirectionVisualiser:
         self.canvas_height = 400
         self.canvas = tk.Canvas(root, width=self.canvas_width, height=self.canvas_height, bg="white")
         self.canvas.grid(row=2, column=0, columnspan=2, padx=10, pady=10)
+        self.update_dir()
 
-        # Draw a rectangle on the canvas
-        self.draw_dir(math.pi/2, 0.5, "green")
-        self.draw_dir(math.pi / 3, 1, "red")
 
     def update_dir(self, alpha, beta, gamma):
         # calculate the vector
-        gamma -= 180
-        gamma /= 90
-        beta /= 90
+        #with data_lock:
+            #alpha = gyrodata["alpha"]
+            #beta = gyrodata["beta"]
+            #gamma = gyrodata["gamma"]
+
+        #gamma /= 180 / (2 * math.pi)
+        gamma /= 45 
+        beta /= 45
+        #alpha /= 45
+
         # draw the vector
         ## draw the gamma
-        self.draw_dir((math.pi/2)+math.radians(alpha), gamma, "green")
-        self.draw_dir(math.radians(alpha), beta, "red")
-        return
+        self.canvas.delete("all")
+        self.draw_dir(math.radians(alpha)+(math.pi/2), 1, "yellow")
+        self.draw_dir(math.radians(alpha), gamma, "green")
+        self.draw_dir(math.radians(alpha)+(math.pi/2), beta, "red")
+
+        self.root.after(5, self.update_dir)
+
 
     def draw_dir(self, angle, scale, color):
         """Draws a rectangle on the canvas."""
@@ -41,12 +50,11 @@ class DirectionVisualiser:
         l = 150*scale
         x2 = x1 + (l*math.cos(angle))
         y2 = y1 - (l*math.sin(angle))
+
         self.canvas.create_line(x1, y1, x2, y2, fill=color)
 
-
-
-# --- Main ---
-if __name__ == "__main__":
+def run_tkinter():
+    # Create Tkinter window
     root = tk.Tk()
-    app = MyApplication(root)
+    app = tkinter_gui(root)
     root.mainloop()
