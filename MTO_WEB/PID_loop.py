@@ -41,7 +41,7 @@ theta_3 = 240 * math.pi / 180
 RAD_S_TO_RPM = 60 / (2 * math.pi)
 RPM_TO_RAD_S = (2 * math.pi) / 60
 MAX_RPM = 188  # theoretical max motor speed in RPM
-MAX_SAFE_RPM = 150  # safe operating range for our motors
+MAX_SAFE_RPM = 174 # safe max motor speed in RPM
 
 # PWM and speed settings
 PWM_FREQUENCY = 100  # Hz

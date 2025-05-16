@@ -20,6 +20,9 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+website_data = {"alpha": 0, "beta": 0, "gamma": 0}
+website_lock = threading.Lock()
+
 # Motor pin definitions
 M1_IN1, M1_IN2, M1_ENA = 22, 23, 13
 M2_IN1, M2_IN2, M2_ENA = 24, 25, 18
@@ -32,17 +35,21 @@ r_b = 0.132   # base radius (distance from center to wheel)
 # Platform wheel angles (in radians)
 theta_1 = 0
 theta_2 = 120 * math.pi / 180
-theta_3 = 240 * math.pi / 180
+theta_3 = (-120) * math.pi / 180
 
 # RPM conversion constants
 RAD_S_TO_RPM = 60 / (2 * math.pi)
 RPM_TO_RAD_S = (2 * math.pi) / 60
 MAX_RPM = 188  # theoretical max motor speed in RPM
-MAX_SAFE_RPM = 150  # safe operating range for our motors
+MAX_SAFE_RPM = 174  # safe operating range for our motors
 
 # PWM and speed settings
 PWM_FREQUENCY = 100  # Hz
 MAX_SPEED = 100      # Max PWM duty cycle
+
+
+MAX_ANGLE_DEG = 45.0
+MAX_VELOCITY = 5.5
 
 # Shared state and synchronization
 class SharedState:
@@ -78,16 +85,16 @@ class AtlasstoneController:
         self.pid_sample_time = 0.1  # 10 Hz update rate
         
         # Initialize PID controllers with explicit sample time
-        self.pid_roll = PID(0.01, 0.01, 0.005, 
+        self.pid_roll = PID(0.01, 0, 0.005, 
                             setpoint=0, 
                             sample_time=self.pid_sample_time,
                             output_limits=(-MAX_SAFE_RPM, MAX_SAFE_RPM))
-        self.pid_pitch = PID(0.01, 0.01, 0.005, 
+        self.pid_pitch = PID(0.01, 0, 0.005, 
                              setpoint=0, 
                              sample_time=self.pid_sample_time,
                              output_limits=(-MAX_SAFE_RPM, MAX_SAFE_RPM))
         # Reduced PID values for yaw to make it less aggressive
-        self.pid_yaw = PID(0.1, 0.01, 0.0005, 
+        self.pid_yaw = PID(0.1125, 0.0005, 0.008, 
                            setpoint=0, 
                            sample_time=self.pid_sample_time,
                            output_limits=(-MAX_SAFE_RPM/4, MAX_SAFE_RPM/4))
@@ -102,17 +109,17 @@ class AtlasstoneController:
 
         # Initialize Madgwick filter
         self.sample_period = 0.001  
-        self.madgwick = MadgwickAHRS(sampleperiod=self.sample_period, beta=5)
+        self.madgwick = MadgwickAHRS(sampleperiod=self.sample_period, beta=10)
 
         # Magnetometer calibration parameters
-        self.mag_offset = (0.4774, 0.0024, 0.0079)  # calibrated offsets (bias)
-        self.mag_scale = (0.9514, 0.9809, 1.0760)   # Calibrated scaling factors
+        self.mag_offset = (0.2911, 0.1219, -0.0205)  # calibrated offsets (bias)
+        self.mag_scale = (0.9363, 0.9712, 1.1082)   # Calibrated scaling factors
 
         # Moving average filter parameters
-        self.ACCEL_WINDOW_SIZE = 10
-        self.GYRO_WINDOW_SIZE = 8
-        self.MAG_WINDOW_SIZE = 15
-        self.ORIENTATION_WINDOW_SIZE = 20
+        self.ACCEL_WINDOW_SIZE = 1
+        self.GYRO_WINDOW_SIZE = 1
+        self.MAG_WINDOW_SIZE = 1
+        self.ORIENTATION_WINDOW_SIZE = 1
 
         # Initialize buffers
         self.init_moving_average_buffers()
@@ -243,7 +250,7 @@ class AtlasstoneController:
     
     def set_motor_pwm(self, pin_in1, pin_in2, pin_ena, motor_rpm):
         """Set motor direction and apply PWM signal based on desired RPM."""
-        direction = 1 if motor_rpm >= 0 else 0
+        direction = 0 if motor_rpm >= 0 else 1
         lgpio.gpio_write(self.h, pin_in1, direction)
         lgpio.gpio_write(self.h, pin_in2, 1 - direction)
         duty_cycle = self.rpm_to_pwm(abs(motor_rpm))
@@ -349,46 +356,7 @@ class AtlasstoneController:
         finally:
             logger.info("IMU Thread Terminated")
     
-    def http_server_thread_func(self):
-        """Thread function for HTTP server to receive commands."""
-        class CommandHandler(http.server.SimpleHTTPRequestHandler):
-            def do_POST(self):
-                try:
-                    content_length = int(self.headers['Content-Length'])
-                    post_data = self.rfile.read(content_length)
-                    command = json.loads(post_data.decode('utf-8'))
-                    
-                    # Validate and process command
-                    with self.server.controller.shared_state.lock:
-                        if 'roll' in command:
-                            self.server.controller.shared_state.target_roll = command['roll']
-                        if 'pitch' in command:
-                            self.server.controller.shared_state.target_pitch = command['pitch']
-                        if 'yaw' in command:
-                            self.server.controller.shared_state.target_yaw = command['yaw']
-                    
-                    self.send_response(200)
-                    self.send_header('Content-type', 'application/json')
-                    self.end_headers()
-                    self.wfile.write(json.dumps({"status": "success"}).encode('utf-8'))
-                except Exception as e:
-                    logger.error(f"HTTP Server Error: {e}")
-                    self.send_error(500, f"Server Error: {e}")
         
-        class CustomHTTPServer(socketserver.TCPServer):
-            def __init__(self, *args, **kwargs):
-                self.controller = kwargs.pop('controller')
-                super().__init__(*args, **kwargs)
-        
-        PORT = 8000
-        handler = CommandHandler
-        try:
-            with CustomHTTPServer(("", PORT), handler, controller=self) as httpd:
-                logger.info(f"Serving HTTP commands on port {PORT}")
-                httpd.serve_forever()
-        except Exception as e:
-            logger.error(f"HTTP Server Error: {e}")
-    
     def motor_control_thread_func(self):
         """Thread function for PID-based motor control."""
         last_update_time = time.time()
@@ -442,8 +410,8 @@ class AtlasstoneController:
                 # Compute motor RPMs based on PID corrections
                 try:
                     # Scale down the corrections for more reasonable values
-                    roll_correction_scaled = roll_correction * 0.2
-                    pitch_correction_scaled = pitch_correction * 0.2
+                    roll_correction_scaled = roll_correction * 0.5
+                    pitch_correction_scaled = -pitch_correction * 0.5
                     yaw_correction_scaled = yaw_correction * 0.1
                     
                     # Calculate linear velocity and heading
@@ -474,21 +442,24 @@ class AtlasstoneController:
             self.stop_motors()
             logger.info("Motor Control Thread Terminated")
     
+    def get_shared_state(self):
+        return self.shared_state
+
     def run(self):
         """Start all threads and manage the robot control system."""
         try:
             # Create and start threads
             imu_thread = threading.Thread(target=self.imu_thread_func, daemon=True)
-            http_thread = threading.Thread(target=self.http_server_thread_func, daemon=True)
+            #http_thread = threading.Thread(target=self.http_server_thread_func, daemon=True)
             motor_thread = threading.Thread(target=self.motor_control_thread_func, daemon=True)
             
             imu_thread.start()
-            http_thread.start()
+            #http_thread.start()
             motor_thread.start()
             
             # Wait for threads to complete (which they won't unless an exception occurs)
             imu_thread.join()
-            http_thread.join()
+            #http_thread.join()
             motor_thread.join()
         
         except KeyboardInterrupt:
