@@ -57,6 +57,7 @@ class SharedState:
         self.current_roll = 0
         self.current_pitch = 0
         self.current_yaw = 0
+        self.motors_enabled = 0
         self.lock = threading.Lock()
 
 # Import Madgwick library directly

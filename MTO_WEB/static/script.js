@@ -11,6 +11,7 @@ const button_trim_right = document.getElementById("button_trim_right");
 // Get the sensor support label element.
 const sensorSupportLabel = document.getElementById("sensorSupportLabel");
 const enableGyroButton = document.getElementById("infoToggle");
+const enablemotorButton = document.getElementById("motor_toggle");
 
 
 
@@ -222,6 +223,7 @@ const drawJoystick = (x, y) => {
 		betaElement.textContent = beta.toFixed(2); 		// Display with 2 decimal places
 		gammaElement.textContent = gamma.toFixed(2); 		  	// Display with 2 decimal places
 		const orientationData = {
+			type: "orientationData",
 			alpha: trim_alpha,
 			beta: beta,
 			gamma: gamma,
@@ -237,6 +239,25 @@ drawJoystick(canvas.width / 2, canvas.height / 2);// Function to send orientatio
 /***************************************
 	* INPUT LISTENERS 
 ***************************************/
+const toggle_motors(checkbox){
+	if(checkbox.checked){
+		//enable motors
+		const motordata = {
+			type: "motorData",
+			motors_enabled: 0
+		}
+	}
+	else{
+		//disable motors
+		const motordata = {
+			type: motordata,
+			motors_enabled: 0
+		}
+	}
+	sendDataToServer(motordata);
+}
+
+
 
 // Event listener for mouse down event.
 let mousedown = false; // Use let instead of const so it can be modified
