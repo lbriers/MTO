@@ -48,9 +48,6 @@ PWM_FREQUENCY = 100  # Hz
 MAX_SPEED = 100      # Max PWM duty cycle
 
 
-MAX_ANGLE_DEG = 45.0
-MAX_VELOCITY = 5.5
-
 # Shared state and synchronization
 class SharedState:
     def __init__(self):
@@ -82,14 +79,14 @@ class AtlasstoneController:
         
         # PID Controllers for Roll, Pitch, Yaw
         # Set sample time explicitly to prevent dt calculation issues
-        self.pid_sample_time = 0.1  # 10 Hz update rate
+        self.pid_sample_time = 0.0001  #  update rate
         
         # Initialize PID controllers with explicit sample time
-        self.pid_roll = PID(0.01, 0, 0.005, 
+        self.pid_roll = PID(0.01, 0, 0, 
                             setpoint=0, 
                             sample_time=self.pid_sample_time,
                             output_limits=(-MAX_SAFE_RPM, MAX_SAFE_RPM))
-        self.pid_pitch = PID(0.01, 0, 0.005, 
+        self.pid_pitch = PID(0.01, 0, 0, 
                              setpoint=0, 
                              sample_time=self.pid_sample_time,
                              output_limits=(-MAX_SAFE_RPM, MAX_SAFE_RPM))
