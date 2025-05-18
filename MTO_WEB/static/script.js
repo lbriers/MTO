@@ -239,23 +239,24 @@ drawJoystick(canvas.width / 2, canvas.height / 2);// Function to send orientatio
 /***************************************
 	* INPUT LISTENERS 
 ***************************************/
-const toggle_motors(checkbox){
-	if(checkbox.checked){
-		//enable motors
+const toggle_motors = (checkbox) => {
+	if (checkbox.checked) {
+		// enable motors
+		const motordata = {
+			type: "motorData",
+			motors_enabled: 1 // <-- assuming 1 = enabled
+		};
+		sendDataToServer(motordata);
+	} else {
+		// disable motors
 		const motordata = {
 			type: "motorData",
 			motors_enabled: 0
-		}
+		};
+		sendDataToServer(motordata);
 	}
-	else{
-		//disable motors
-		const motordata = {
-			type: motordata,
-			motors_enabled: 0
-		}
-	}
-	sendDataToServer(motordata);
-}
+};
+
 
 
 

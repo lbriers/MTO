@@ -420,8 +420,11 @@ class AtlasstoneController:
                     # Compute motor RPMs
                     motor_rpms = self.compute_motor_rpms(vel_ref, theta_ref, omega_z_ref)
                     
-                    # Drive motors
-                    self.drive_motors(motor_rpms)
+                    if self.shared_state.motors_enabled:
+                        # Drive motors
+                        self.drive_motors(motor_rpms)
+                    else:
+                        self.drive_motors([0,0,0])
                 except Exception as motor_error:
                     logger.error(f"Motor Control Error: {motor_error}")
                     self.stop_motors()

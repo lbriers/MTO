@@ -35,17 +35,18 @@ r_b = 0.132   # base radius (distance from center to wheel)
 # Platform wheel angles (in radians)
 theta_1 = 0
 theta_2 = 120 * math.pi / 180
-theta_3 = 240 * math.pi / 180
+theta_3 = (-120) * math.pi / 180
 
 # RPM conversion constants
 RAD_S_TO_RPM = 60 / (2 * math.pi)
 RPM_TO_RAD_S = (2 * math.pi) / 60
 MAX_RPM = 188  # theoretical max motor speed in RPM
-MAX_SAFE_RPM = 174 # safe max motor speed in RPM
+MAX_SAFE_RPM = 174  # safe operating range for our motors
 
 # PWM and speed settings
 PWM_FREQUENCY = 100  # Hz
 MAX_SPEED = 100      # Max PWM duty cycle
+
 
 # Shared state and synchronization
 class SharedState:
@@ -56,6 +57,7 @@ class SharedState:
         self.current_roll = 0
         self.current_pitch = 0
         self.current_yaw = 0
+        self.motors_enabled = 0
         self.lock = threading.Lock()
 
 # Import Madgwick library directly
@@ -78,19 +80,19 @@ class AtlasstoneController:
         
         # PID Controllers for Roll, Pitch, Yaw
         # Set sample time explicitly to prevent dt calculation issues
-        self.pid_sample_time = 0.1  # 10 Hz update rate
+        self.pid_sample_time = 0.0001  #  update rate
         
         # Initialize PID controllers with explicit sample time
-        self.pid_roll = PID(0.01, 0.01, 0.005, 
+        self.pid_roll = PID(0.01, 0, 0, 
                             setpoint=0, 
                             sample_time=self.pid_sample_time,
                             output_limits=(-MAX_SAFE_RPM, MAX_SAFE_RPM))
-        self.pid_pitch = PID(0.01, 0.01, 0.005, 
+        self.pid_pitch = PID(0.01, 0, 0, 
                              setpoint=0, 
                              sample_time=self.pid_sample_time,
                              output_limits=(-MAX_SAFE_RPM, MAX_SAFE_RPM))
         # Reduced PID values for yaw to make it less aggressive
-        self.pid_yaw = PID(0.1, 0.01, 0.0005, 
+        self.pid_yaw = PID(0.1125, 0.0005, 0.008, 
                            setpoint=0, 
                            sample_time=self.pid_sample_time,
                            output_limits=(-MAX_SAFE_RPM/4, MAX_SAFE_RPM/4))
@@ -105,17 +107,17 @@ class AtlasstoneController:
 
         # Initialize Madgwick filter
         self.sample_period = 0.001  
-        self.madgwick = MadgwickAHRS(sampleperiod=self.sample_period, beta=5)
+        self.madgwick = MadgwickAHRS(sampleperiod=self.sample_period, beta=10)
 
         # Magnetometer calibration parameters
-        self.mag_offset = (0.4774, 0.0024, 0.0079)  # calibrated offsets (bias)
-        self.mag_scale = (0.9514, 0.9809, 1.0760)   # Calibrated scaling factors
+        self.mag_offset = (0.2911, 0.1219, -0.0205)  # calibrated offsets (bias)
+        self.mag_scale = (0.9363, 0.9712, 1.1082)   # Calibrated scaling factors
 
         # Moving average filter parameters
-        self.ACCEL_WINDOW_SIZE = 10
-        self.GYRO_WINDOW_SIZE = 8
-        self.MAG_WINDOW_SIZE = 15
-        self.ORIENTATION_WINDOW_SIZE = 20
+        self.ACCEL_WINDOW_SIZE = 1
+        self.GYRO_WINDOW_SIZE = 1
+        self.MAG_WINDOW_SIZE = 1
+        self.ORIENTATION_WINDOW_SIZE = 1
 
         # Initialize buffers
         self.init_moving_average_buffers()
@@ -246,7 +248,7 @@ class AtlasstoneController:
     
     def set_motor_pwm(self, pin_in1, pin_in2, pin_ena, motor_rpm):
         """Set motor direction and apply PWM signal based on desired RPM."""
-        direction = 1 if motor_rpm >= 0 else 0
+        direction = 0 if motor_rpm >= 0 else 1
         lgpio.gpio_write(self.h, pin_in1, direction)
         lgpio.gpio_write(self.h, pin_in2, 1 - direction)
         duty_cycle = self.rpm_to_pwm(abs(motor_rpm))
@@ -406,8 +408,8 @@ class AtlasstoneController:
                 # Compute motor RPMs based on PID corrections
                 try:
                     # Scale down the corrections for more reasonable values
-                    roll_correction_scaled = roll_correction * 0.2
-                    pitch_correction_scaled = pitch_correction * 0.2
+                    roll_correction_scaled = roll_correction * 0.5
+                    pitch_correction_scaled = -pitch_correction * 0.5
                     yaw_correction_scaled = yaw_correction * 0.1
                     
                     # Calculate linear velocity and heading
@@ -418,8 +420,11 @@ class AtlasstoneController:
                     # Compute motor RPMs
                     motor_rpms = self.compute_motor_rpms(vel_ref, theta_ref, omega_z_ref)
                     
-                    # Drive motors
-                    self.drive_motors(motor_rpms)
+                    if self.shared_state.motors_enabled:
+                        # Drive motors
+                        self.drive_motors(motor_rpms)
+                    else:
+                        self.drive_motors([0,0,0])
                 except Exception as motor_error:
                     logger.error(f"Motor Control Error: {motor_error}")
                     self.stop_motors()
@@ -446,7 +451,7 @@ class AtlasstoneController:
         try:
             # Create and start threads
             imu_thread = threading.Thread(target=self.imu_thread_func, daemon=True)
-            http_thread = threading.Thread(target=self.http_server_thread_func, daemon=True)
+            #http_thread = threading.Thread(target=self.http_server_thread_func, daemon=True)
             motor_thread = threading.Thread(target=self.motor_control_thread_func, daemon=True)
             
             imu_thread.start()
