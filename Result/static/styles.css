@@ -1,0 +1,116 @@
+
+ /* styles.css */
+
+ body {
+  font-family: sans-serif;
+  background-color: #f4f4f4;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start; /* Align items to the top */
+  min-height: 100vh;
+  padding-top: 20px; /* Add some padding at the top */
+ }
+
+ h1 {
+  color: #333;
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 2.5em;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+ }
+
+ p {
+  color: #555;
+  margin-bottom: 15px;
+  text-align: center;
+ }
+
+ span#alpha,
+ span#beta,
+ span#gamma {
+  font-weight: bold;
+  color: #007bff;
+  margin-left: 5px;
+ }
+
+ #joystickCanvas {
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  background-color: #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
+ }
+
+.motors-container,
+.toggle-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.checkbox-label {
+  font-size: 1.2em;
+  margin-right: 10px;
+  font-weight: 500;
+  color: #444;
+}
+
+input[type="checkbox"] {
+  width: 28px;
+  height: 28px;
+  accent-color: #007bff;
+  cursor: pointer;
+  margin-right: 10px;
+}
+
+.additionalInfo {
+  margin-left: 20px;
+  font-size: 1em;
+  color: #007bff;
+}
+
+.button-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 32px;
+  margin: 36px 0;
+}
+
+.button-group button {
+  font-size: 1.2em;
+  padding: 18px 36px;
+  border-radius: 8px;
+  border: 2px solid #007bff;
+  background-color: #e6f0ff;
+  cursor: pointer;
+  transition: background 0.2s, border 0.2s;
+}
+
+.button-group button:hover {
+  background-color: #cce0ff;
+  border-color: #005bb5;
+}
+
+ /* Show the information when the checkbox is checked */
+ #infoToggle:checked + #additionalInfo {
+  display: block;
+ }
+
+/* Styles for the sensor support label */
+#sensorSupportLabel {
+	font-weight: bold;
+}
+
+#sensorSupportLabel.supported {
+	color: green;
+}
+
+#sensorSupportLabel.not-supported {
+	color: red;
+}
