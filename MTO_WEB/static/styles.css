@@ -44,36 +44,58 @@
   margin-top: 20px;
  }
 
- /* Styles for the toggle button */
- .toggle-container {
+.motors-container,
+.toggle-container {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  margin-bottom: 20px;
- }
+  gap: 24px;
+  margin-bottom: 32px;
+}
 
- .toggle-container label {
-  margin-bottom: 5px;
-  color: #777;
-  font-size: 0.9em;
- }
+.checkbox-label {
+  font-size: 1.2em;
+  margin-right: 10px;
+  font-weight: 500;
+  color: #444;
+}
 
- #infoToggle {
-  /* Basic styling for the checkbox */
-  margin-top: 5px;
- }
+input[type="checkbox"] {
+  width: 28px;
+  height: 28px;
+  accent-color: #007bff;
+  cursor: pointer;
+  margin-right: 10px;
+}
 
- #additionalInfo {
-  display: none; /* Initially hide the information */
-  margin-top: 10px;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  background-color: #f9f9f9;
-  color: #666;
-  width: 80%; /* Limit the width of the info box */
-  box-sizing: border-box; /* Include padding and border in the width */
- }
+.additionalInfo {
+  margin-left: 20px;
+  font-size: 1em;
+  color: #007bff;
+}
+
+.button-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 32px;
+  margin: 36px 0;
+}
+
+.button-group button {
+  font-size: 1.2em;
+  padding: 18px 36px;
+  border-radius: 8px;
+  border: 2px solid #007bff;
+  background-color: #e6f0ff;
+  cursor: pointer;
+  transition: background 0.2s, border 0.2s;
+}
+
+.button-group button:hover {
+  background-color: #cce0ff;
+  border-color: #005bb5;
+}
 
  /* Show the information when the checkbox is checked */
  #infoToggle:checked + #additionalInfo {

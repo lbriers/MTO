@@ -1,30 +1,30 @@
- <!DOCTYPE html>
- <html>
-  	<head>
-  		<title>ATLAS STONE INTERFACE</title>
-  		<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
-  	</head>
-	<body>
-  	<h1>ATLAS STONE INTERFACE</h1>
-  	<div class="motors-container">
-		<label for="infoToggle" id="motor_toggle_Label" ></label>
-  		<input type="checkbox" id="motor_toggle" onclick="toggle_motors(this)">
-  		<p id="additionalInfo">motors enabled!</p>
-  	</div>
-  	<div class="toggle-container">
-		<label for="infoToggle" id="sensorSupportLabel"></label>
-  		<input type="checkbox" id="infoToggle">
-  		<p id="additionalInfo">Tilt control enabled!</p>
-  	</div>
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>ATLAS STONE INTERFACE</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body>
+    <h1>ATLAS STONE INTERFACE</h1>
+    <div class="motors-container">
+      <label for="motor_toggle" class="checkbox-label">Motoren inschakelen</label>
+      <input type="checkbox" id="motor_toggle" onclick="toggle_motors(this)">
+      <span id="motor_toggle_status" class="additionalInfo"></span>
+    </div>
+    <div class="toggle-container">
+      <label for="infoToggle" class="checkbox-label" id="sensorSupportLabel">Tilt control inschakelen</label>
+      <input type="checkbox" id="infoToggle">
+      <span id="tilt_toggle_status" class="additionalInfo"></span>
+    </div>
 
-  	<p>alpha <span id="alpha"></span></p>
-  	<p>beta <span id="beta"></span></p>
-  	<p>gamma <span id="gamma"></span></p>
-	<span>
-		<button id="button_trim_left">trim gamma left</button>
-		<button id="button_trim_right">trim gamma right</button>
-	</span>
-  	<canvas id="joystickCanvas"></canvas>
-  	<script src="{{ url_for('static', filename='script.js') }}"></script>
-  	</body>
+    <p>alpha <span id="alpha"></span></p>
+    <p>beta <span id="beta"></span></p>
+    <p>gamma <span id="gamma"></span></p>
+    <div class="button-group">
+      <button id="button_trim_left">trim gamma left</button>
+      <button id="button_trim_right">trim gamma right</button>
+    </div>
+    <canvas id="joystickCanvas"></canvas>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+  </body>
 </html>
