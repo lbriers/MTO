@@ -98,14 +98,15 @@ const startSensor = (sensor) => {
 			if(enableGyroButton.checked == true){
 				// Convert quaternion to Euler angles (degrees)
 				const euler = getEulerAngles(quaternion);
-				const alpha = euler.alpha; // Yaw (rotation around Z axis)
-				const beta = euler.beta;  // Pitch (rotation around X axis)
-				const gamma = euler.gamma; // Roll (rotation around Y axis)
+				const alpha = -euler.alpha; // Yaw (rotation around Z axis)
+				const beta = -euler.beta;  // Pitch (rotation around X axis)
+				const gamma = ((Math.sign(euler.gamma)*180) - euler.gamma); // Roll (rotation around Y axis)
 				alphaElement.textContent = alpha.toFixed(2); 				  // Display with 2 decimal places
 				betaElement.textContent = beta.toFixed(2); 				  // Display with 2 decimal places
 				gammaElement.textContent = gamma.toFixed(2); 				  // Display with 2 decimal places
 
 				const orientationData = {
+					type: "orientationData",
 					alpha: alpha,
 					beta: beta,
 					gamma: gamma,

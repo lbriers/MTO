@@ -80,7 +80,7 @@ class AtlasstoneController:
         
         # PID Controllers for Roll, Pitch, Yaw
         # Set sample time explicitly to prevent dt calculation issues
-        self.pid_sample_time = 0.0001  #  update rate
+        self.pid_sample_time = 0.001  #  update rate
         
         # Initialize PID controllers with explicit sample time
         self.pid_roll = PID(0.01, 0, 0, 
@@ -114,9 +114,9 @@ class AtlasstoneController:
         self.mag_scale = (0.9363, 0.9712, 1.1082)   # Calibrated scaling factors
 
         # Moving average filter parameters
-        self.ACCEL_WINDOW_SIZE = 1
-        self.GYRO_WINDOW_SIZE = 1
-        self.MAG_WINDOW_SIZE = 1
+        self.ACCEL_WINDOW_SIZE = 10
+        self.GYRO_WINDOW_SIZE = 10
+        self.MAG_WINDOW_SIZE = 10
         self.ORIENTATION_WINDOW_SIZE = 1
 
         # Initialize buffers
