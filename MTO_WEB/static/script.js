@@ -106,6 +106,7 @@ const startSensor = (sensor) => {
 				gammaElement.textContent = gamma.toFixed(2); 				  // Display with 2 decimal places
 
 				const orientationData = {
+					type: "orientationData",
 					alpha: alpha,
 					beta: beta,
 					gamma: gamma,
