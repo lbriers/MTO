@@ -17,12 +17,12 @@
       <span id="tilt_toggle_status" class="additionalInfo"></span>
     </div>
 
-    <p>alpha <span id="alpha"></span></p>
-    <p>beta <span id="beta"></span></p>
-    <p>gamma <span id="gamma"></span></p>
+    <p>alpha <span id="yaw"></span></p>
+    <p>beta <span id="roll"></span></p>
+    <p>gamma <span id="pitch"></span></p>
     <div class="button-group">
-      <button id="button_trim_left">trim gamma left</button>
-      <button id="button_trim_right">trim gamma right</button>
+      <button id="button_trim_left">trim yaw left</button>
+      <button id="button_trim_right">trim yaw right</button>
     </div>
     <canvas id="joystickCanvas"></canvas>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
