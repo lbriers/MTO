@@ -39,7 +39,7 @@ def handle_orientationData(data):
         with shared_state.lock:
             shared_state.target_yaw = data.get("alpha")
             shared_state.target_pitch = data.get("beta")
-            shared_state.target_roll = data.get("gamma")
+            shared_state.target_roll = sign(data.get("gamma"))*180 - sign(data.get("gamma"))
     return jsonify({"status": "success"}), 200
 
 def handle_motorData(data):
